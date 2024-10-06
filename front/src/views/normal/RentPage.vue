@@ -54,11 +54,13 @@
 export default {
   data() {
     return {
-      selectedType: 'adult', // 성인용/유아용 타입
-      rentalStartDate: null, // 대여 시작일
-      rentalEndDate: null, // 반납일
-      errorMessage: '', // 경고 메시지
-      currentTab: '',  // 현재 활성화된 탭 상태
+      wheelchairTypes: [], // 휠체어 타입 목록 (필요에 따라 추가)
+      selectedType: '', // 사용자가 선택한 휠체어 타입
+      rentalStartDate: '', // 대여 시작일
+      rentalEndDate: '', // 반납일
+      rental: null,
+      errorMessage: '', // 오류 메시지
+      currentTab: 'rent', // 기본 탭 설정
     };
   },
   computed: {
@@ -90,7 +92,7 @@ export default {
         }
       }
     },
-    rentWheelchair() {
+    async rentWheelchair() {
       if (this.errorMessage) {
         alert(this.errorMessage);
         return;
@@ -100,16 +102,45 @@ export default {
         return;
       }
 
-      // 대여 완료 후 대여 정보 전달 (라우터에 쿼리 파라미터로 전달)
-      this.$router.push({
-        path: '/rent/check',
-        query: {
-          type: this.selectedType,
-          startDate: this.rentalStartDate,
-          endDate: this.rentalEndDate,
-          tab: this.currentTab  // 현재 탭 상태 전달
+      // DTO에 맞게 변환하여 데이터 생성
+      const rentalRequest = {
+        wheelchairType: this.selectedType === 'adult' ? 'ADULT' : 'CHILD', // WheelchairType으로 변환
+        rentalDate: this.rentalStartDate, // ISO 형식의 대여 시작일
+        returnDate: this.rentalEndDate, // ISO 형식의 반납일
+      };
+
+      // 대여 요청
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:8080/rental/rent', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token,
+          },
+          body: JSON.stringify(rentalRequest), // DTO 형식으로 변환된 데이터 전송
+        });
+
+        if (response.ok) {
+          const rentalData = await response.json();
+          // 대여 완료 후 대여 정보 전달 (라우터에 쿼리 파라미터로 전달)
+          this.$router.push({
+            path: '/rent/check',
+            query: {
+              type: this.selectedType,
+              startDate: this.rentalStartDate,
+              endDate: this.rentalEndDate,
+              tab: this.currentTab,  // 현재 탭 상태 전달
+              rentalId: rentalData.id, // 대여 ID 추가
+            }
+          });
+          alert('대여 요청이 성공적으로 처리되었습니다.');
+        } else {
+          alert('대여 요청 처리에 실패했습니다.');
         }
-      });
+      } catch (error) {
+        console.error('대여 요청 중 오류 발생:', error);
+      }
     },
     // 네비게이션 이동 메서드
     goToHome() {

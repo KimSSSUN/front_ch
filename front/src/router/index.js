@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import IntroPage from '@/views/normal/IntroPage.vue';
-import LoginPage from '@/views/normal/LoginPage.vue';
-import SignupPage from '@/views/normal/SignupPage.vue';
+
 import MainPage from '@/views/normal/MainPage.vue';
 import RentPage from '@/views/normal/RentPage.vue';
 import ProfilePage from '@/views/normal/ProfilePage.vue';
@@ -15,6 +14,11 @@ import GuardianMap from '@/views/guardian/GuardianMap.vue';
 import GuardianProfilePage from '@/views/guardian/GuardianProfilePage.vue';
 import AdminRentalPage from '@/views/admin/AdminRentalPage.vue';
 import AdminWheelchairPage from '@/views/admin/AdminWheelchairPage.vue';
+
+
+// 공통 로그인 회원가입
+import LoginPage from '@/views/user/LoginPage.vue';
+import SignupPage from '@/views/user/SignupPage.vue';
 
 // 라우트 설정
 const routes = [
@@ -47,27 +51,27 @@ const router = createRouter({
 
 // 라우트 보호 로직 추가
 router.beforeEach((to, from, next) => {
-  const storedUserInfo = localStorage.getItem('userInfo');
-  
-  if (!storedUserInfo && to.path !== '/login' && to.path !== '/signup') {
+  const storedRole = localStorage.getItem('role'); // 'role'에서 가져옵니다.
+
+  // 로그인 및 회원가입 페이지가 아닌 경우에 로그인 페이지로 리다이렉트
+  if (!storedRole && to.path !== '/login' && to.path !== '/signup') {
     return next('/login');
   }
 
-  const userInfo = storedUserInfo ? JSON.parse(storedUserInfo) : null;
-
-  if (to.path.startsWith('/admin') && userInfo?.mode !== 'admin') {
+  // 각 경로에 대한 역할 확인
+  if (to.path.startsWith('/admin') && storedRole !== 'ADMIN') { // 'ADMIN'으로 비교
     return next('/login');
   }
 
-  if (to.path.startsWith('/guardian') && userInfo?.mode !== 'guardian') {
+  if (to.path.startsWith('/guardian') && storedRole !== 'GUARDIAN') { // 'GUARDIAN'으로 비교
     return next('/login');
   }
 
-  if (to.path.startsWith('/normal') && userInfo?.mode !== 'user') {
+  if (to.path.startsWith('/normal') && storedRole !== 'NORMAL') { // 'NORMAL'로 비교
     return next('/login');
   }
 
-  next();
+  next(); // 조건을 통과하면 다음으로 진행
 });
 
 export default router;
