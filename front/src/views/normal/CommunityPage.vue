@@ -1,3 +1,4 @@
+<!-- CommunityPage.vue -->
 <template>
   <div class="community-page container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -15,7 +16,7 @@
         <div>
           <h6>{{ notice.title }}</h6>
           <small>{{ notice.content }}</small>
-          <small class="text-muted ms-3">Posted by: {{ notice.user.username }}</small> <!-- 오른쪽 끝으로 이동 -->
+          <small class="text-muted ms-3">Posted by: {{ notice.user.username }}</small>
         </div>
       </li>
     </ul>
@@ -41,18 +42,21 @@
         <button class="btn btn-dark w-100" @click="submitPost">Post</button>
       </div>
     </div>
-    <BottomNav />
+
+    <!-- NavBar 컴포넌트 사용 -->
+    <NavBar :currentTab="'community'" />
   </div>
 </template>
 
 <script>
 import axios from '@/axios';
-import BottomNav from '@/components/BottomNav.vue'; // BottomNav 컴포넌트 가져오기
+import NavBar from '@/components/NavBar.vue';
+
 
 export default {
   components: {
-      BottomNav // BottomNav 컴포넌트 등록
-    },
+    NavBar
+  },
   data() {
     return {
       notices: [],
@@ -62,8 +66,7 @@ export default {
         content: '',
         imageUrl: null,
       },
-      imageUrl: null, // 이미지 미리보기를 위한 변수 추가
-      currentTab: 'community'
+      imageUrl: null
     };
   },
   mounted() {
@@ -73,23 +76,11 @@ export default {
     goBack() {
       this.$router.push('/normal');
     },
-    goToHome() {
-      this.$router.push('/normal');
-      this.currentTab = 'home';
-    },
-    goToRent() {
-      this.$router.push('/rent/check');
-      this.currentTab = 'rent';
-    },
-    goToCommunity() {
-      this.$router.push('/community');
-      this.currentTab = 'community';
-    },
     onFileChange(event) {
       const file = event.target.files[0];
       if (file) {
-        this.newPost.imageUrl = file; // 파일 객체 저장
-        this.imageUrl = URL.createObjectURL(file); // 미리보기 URL 생성
+        this.newPost.imageUrl = file;
+        this.imageUrl = URL.createObjectURL(file);
       }
     },
     async fetchNotices() {
@@ -104,7 +95,7 @@ export default {
       const formData = new FormData();
       formData.append('title', this.newPost.title);
       formData.append('content', this.newPost.content);
-      if (this.newPost.imageUrl) { // 수정된 부분
+      if (this.newPost.imageUrl) {
         formData.append('imageUrl', this.newPost.imageUrl);
       }
 
@@ -113,15 +104,15 @@ export default {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
         this.fetchNotices();
-        this.isCreatePostVisible = false; // 모달 닫기
+        this.isCreatePostVisible = false;
       } catch (error) {
         console.error('Error submitting post:', error);
       }
 
-      this.newPost = { title: '', content: '', imageUrl: null }; // 초기화
+      this.newPost = { title: '', content: '', imageUrl: null };
     },
     hideCreatePost() {
-      this.isCreatePostVisible = false; // 모달 닫기
+      this.isCreatePostVisible = false;
     },
     goToPostDetail(postId) {
       this.$router.push({ name: 'PostDetail', params: { postId } });
@@ -131,28 +122,7 @@ export default {
 </script>
 
 <style scoped>
-.nav-item {
-  text-align: center;
-  background-color: white;
-  border: none;
-  box-shadow: none;
-}
 
-.nav-item i {
-  font-size: 1.6rem;
-  display: block;
-}
-
-.nav-text {
-  font-size: 0.75rem;
-  margin-top: 4px;
-  color: #666;
-}
-
-.nav-text.active {
-  font-weight: bold;
-  color: #007bff;
-}
 
 /* 플러스 버튼 스타일 */
 .plus-btn {
