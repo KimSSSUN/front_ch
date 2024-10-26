@@ -1,29 +1,29 @@
 <template>
   <div class="container mt-4 text-center">
-    <h5>예약 현황</h5>
+    <h5>대여 현황</h5>
 
-    <!-- 예약 번호 -->
+    <!-- 대여 코드 -->
     <div class="reservation-number mt-4">
-      <strong>예약 번호</strong>
-      <p>{{ reservationNumber }}</p>
+      <strong>대여 코드</strong>
+      <p>{{ currentRental.rentalCode }}</p>
     </div>
 
-    <!-- 예약 기간 -->
+    <!-- 대여 기간 -->
     <div class="rental-period mt-4">
-      <strong>예약 기간</strong>
+      <strong>대여 기간</strong>
       <p>{{ formattedRentalPeriod }}</p>
     </div>
 
     <!-- 휠체어 타입 -->
-    <div class="wheelchair-type mt-4">
+    <div class="wheelchair-type mt-4" v-if="currentRental.wheelchair">
       <strong>휠체어 타입</strong>
-      <p>{{ wheelchairType }}</p>
+      <p>{{ currentRental.wheelchair.type }}</p>
     </div>
 
     <!-- 예약 상태 -->
     <div class="reservation-status mt-4" :class="statusClass">
       <strong>상태</strong>
-      <p>{{ status }}</p>
+      <p>{{ currentRental.status }}</p>
     </div>
 
     <!-- 상태 바 -->
@@ -31,62 +31,124 @@
       <div class="progress-bar" :style="{ width: statusProgress + '%' }"></div>
     </div>
 
-    <!-- 예약 취소 버튼 -->
+    <!-- 대여 취소하기 또는 미리 반납하기 버튼 -->
     <button 
-      v-if="status !== 'Cancelled'" 
-      class="btn btn-danger w-100 mt-3" 
+      v-if="currentRental.status === 'WAITING'" 
+      class="btn btn-warning w-100 mt-3" 
       @click="cancelReservation"
     >
-      예약 취소
+      대여 취소하기
     </button>
 
-    <!-- 네비게이션 바 -->
-    <nav class="bottom-nav d-flex justify-content-around align-items-center mt-4">
-      <button class="nav-item" @click="goToHome">
-        <i class="bi bi-house-door"></i>
-        <span class="nav-text">Home</span>
-      </button>
-      <button class="nav-item" @click="goToRent">
-        <i class="bi bi-cart"></i>
-        <span class="nav-text">Rent</span>
-      </button>
-      <button class="nav-item" @click="goToCommunity">
-        <i class="bi bi-chat"></i>
-        <span class="nav-text">Community</span>
-      </button>
-    </nav>
+    <button 
+      v-else-if="currentRental.status !== 'Cancelled' && currentRental.status !== 'RETURNED'" 
+      class="btn btn-danger w-100 mt-3" 
+      @click="returnRental"
+    >
+      미리 반납하기
+    </button>
+    <BottomNav />
   </div>
 </template>
 
 <script>
+import axios from 'axios';
+import BottomNav from '@/components/BottomNav.vue'; // BottomNav 컴포넌트 가져오기
+
 export default {
+  components: {
+      BottomNav // BottomNav 컴포넌트 등록
+    },
   data() {
     return {
-      reservationNumber: 'WCR123456',  // 예약 번호
-      wheelchairType: '',              // 휠체어 타입
-      rentalStartDate: '',             // 대여 시작일
-      rentalEndDate: '',               // 대여 종료일
-      status: 'Confirmed',             // 상태
+      user: null, // 현재 사용자 정보
+      currentRental: {
+        wheelchair: {}, // 초기값으로 빈 객체 할당
+      },
     };
   },
   computed: {
     formattedRentalPeriod() {
-      return `${this.rentalStartDate} - ${this.rentalEndDate}`;
+      return `${this.currentRental.rentalDate} - ${this.currentRental.returnDate}`;
     },
     statusProgress() {
-      return this.status === 'Confirmed' ? 100 : this.status === 'Cancelled' ? 0 : 50;  // 상태에 따른 진행바 크기
+      return this.currentRental.status === 'ACTIVE' ? 50 : this.currentRental.status === 'Cancelled' ? 0 : 100;
     },
     statusClass() {
-      return this.status === 'Cancelled' ? 'text-danger' : 'text-success'; // 상태에 따른 스타일 변경
-    }
+      return this.currentRental.status === 'Cancelled' ? 'text-danger' : 'text-success';
+    },
   },
-  mounted() {
-    const query = this.$route.query;
-    this.wheelchairType = query.type || '성인용';   // 휠체어 타입 (쿼리에서 가져옴)
-    this.rentalStartDate = query.startDate || '2023-08-17'; // 대여 시작일
-    this.rentalEndDate = query.endDate || '2023-08-24';     // 대여 종료일
+  created() {
+    this.fetchCurrentUser();
   },
   methods: {
+    // 사용자 대여 정보 가져오기
+    async fetchCurrentUser() {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get('http://localhost:8080/rental/currRent', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        this.user = response.data;
+        this.currentRental = this.user || {}; // 사용자 정보가 없으면 빈 객체로 초기화
+      } catch (error) {
+        console.error('사용자 정보를 가져오는 데 실패했습니다:', error);
+      }
+    },
+    
+    // 미리 반납하기 기능
+    async returnRental() {
+      if (confirm('정말 반납하시겠습니까?')) {
+        try {
+          const token = localStorage.getItem('token');
+          const response = await axios.post('http://localhost:8080/rental/return', {}, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          if (response.status === 200) {
+            alert('반납이 완료되었습니다.');
+            this.currentRental.status = 'RETURNED'; // 상태를 'RETURNED'로 변경
+            this.fetchCurrentUser(); // 반납 후 사용자 정보 갱신
+            this.$router.push('/normal');
+          } else {
+            alert('반납 처리 중 오류가 발생했습니다.');
+          }
+        } catch (error) {
+          console.error('반납 처리 중 오류:', error);
+          alert('반납 처리 중 오류가 발생했습니다.');
+        }
+      }
+    },
+
+    // 대여 취소하기 기능
+    async cancelReservation() {
+      if (confirm('정말 대여를 취소하시겠습니까?')) {
+        try {
+          const token = localStorage.getItem('token');
+          const response = await axios.post('http://localhost:8080/rental/cancel', {}, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          if (response.status === 200) {
+            alert('대여가 취소되었습니다.');
+            this.currentRental.status = 'Cancelled'; // 상태를 'Cancelled'로 변경
+            this.fetchCurrentUser(); // 취소 후 사용자 정보 갱신
+            this.$router.push('/normal');
+          } else {
+            alert('대여 취소 중 오류가 발생했습니다.');
+          }
+        } catch (error) {
+          console.error('대여 취소 중 오류:', error);
+          alert('대여 취소 중 오류가 발생했습니다.');
+        }
+      }
+    },
+
+    // 네비게이션 기능들
     goToHome() {
       this.$router.push('/normal');
     },
@@ -96,13 +158,7 @@ export default {
     goToCommunity() {
       this.$router.push('/community');
     },
-    cancelReservation() {
-      if (confirm('정말 예약을 취소하시겠습니까?')) {
-        this.status = 'Cancelled';  // 상태를 취소로 변경
-        alert('예약이 취소되었습니다.');
-      }
-    }
-  }
+  },
 };
 </script>
 
@@ -112,7 +168,10 @@ export default {
   margin: 0 auto;
 }
 
-.reservation-number, .rental-period, .wheelchair-type, .reservation-status {
+.reservation-number,
+.rental-period,
+.wheelchair-type,
+.reservation-status {
   text-align: left;
   margin-bottom: 20px;
 }
@@ -129,7 +188,6 @@ export default {
   border-radius: 5px;
 }
 
-/* 하단 내비게이션 스타일 통일 */
 .bottom-nav {
   position: fixed;
   bottom: 0;

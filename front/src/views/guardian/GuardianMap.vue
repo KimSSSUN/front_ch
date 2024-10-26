@@ -19,15 +19,19 @@
 
 <script>
 /* global kakao */
+import axios from 'axios';
+
 export default {
   name: 'GuardianMap',
   data() {
     return {
       currentTab: 'map',
+      map: null, // 지도 객체를 저장하기 위한 변수
     };
   },
   mounted() {
     this.loadKakaoMap();
+    this.fetchWheelchairLocation(); // 휠체어 위치 정보 가져오기
   },
   methods: {
     loadKakaoMap() {
@@ -42,19 +46,45 @@ export default {
         }, 500);
       }
     },
-    initializeMap() {
-      const container = document.getElementById("map"); 
+    initializeMap(centerLat, centerLng) {
+      console.log(`Initializing map at latitude: ${centerLat}, longitude: ${centerLng}`);
+      const container = document.getElementById("map");
       const options = {
-        center: new kakao.maps.LatLng(37.5665, 126.9780),
+        center: new kakao.maps.LatLng(centerLat, centerLng),
         level: 3,
       };
-      const map = new kakao.maps.Map(container, options);
-
-      const markerPosition = new kakao.maps.LatLng(37.5665, 126.9780);
+      this.map = new kakao.maps.Map(container, options);
+    },
+    fetchWheelchairLocation() {
+      axios
+        .get('http://localhost:8080/wheelchair/map', { 
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}` // 인증 헤더 추가
+          }
+        })
+        .then((response) => {
+          const location = response.data; // 백엔드에서 위치 정보 받기 (x, y 좌표)
+          if (location && location.x && location.y) {
+            this.initializeMap(location.x, location.y);
+            this.updateMapMarker(location.x, location.y); // y를 위도, x를 경도로 설정
+            console.log(location.x,location.y)
+          } else {
+            console.error('Invalid location data:', location);
+          }
+        })
+        .catch((error) => {
+          console.error('Error fetching wheelchair location:', error);
+        });
+    },
+    updateMapMarker(lat, lng) {
+      const markerPosition = new kakao.maps.LatLng(lat, lng);
+      
       const marker = new kakao.maps.Marker({
         position: markerPosition,
       });
-      marker.setMap(map);
+
+      marker.setMap(this.map); // 지도에 마커 표시
+      this.map.setCenter(markerPosition); // 지도의 중심을 마커 위치로 변경
     },
     goToMap() {
       this.$router.push("/guardian/map");

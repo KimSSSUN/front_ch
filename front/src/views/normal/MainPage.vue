@@ -18,7 +18,7 @@
         >
           <h6 class="card-title">성인용</h6>
           <p class="status">대여 가능</p>
-          <p class="count">20</p>
+          <p class="count">{{ adultCount }}</p> <!-- 동적으로 표시 -->
         </div>
       </div>
 
@@ -31,7 +31,7 @@
         >
           <h6 class="card-title">유아용</h6>
           <p class="status">대여 가능</p>
-          <p class="count">10</p>
+          <p class="count">{{ childCount }}</p> <!-- 동적으로 표시 -->
         </div>
       </div>
     </div>
@@ -59,18 +59,42 @@
 </template>
 
 <script>
+import axios from 'axios'; // axios 라이브러리 임포트
+
 export default {
   data() {
     return {
       selectedType: 'adult',  // 기본 선택은 '성인용'
-      currentTab: ''          // 현재 활성화된 탭 상태 (라우터 경로 기반)
+      currentTab: '',          // 현재 활성화된 탭 상태 (라우터 경로 기반)
+      adultCount: 0,          // 성인용 휠체어 개수
+      childCount: 0           // 유아용 휠체어 개수
     };
   },
   mounted() {
-    // 페이지가 로드될 때 초기 탭 상태 설정
+    // 페이지가 로드될 때 초기 탭 상태 설정 및 휠체어 개수 가져오기
     this.updateCurrentTab(this.$route.path);
+    this.fetchWheelchairCounts(); // 휠체어 개수 가져오기
   },
   methods: {
+    fetchWheelchairCounts() {
+      // 성인용 휠체어 개수 가져오기
+      axios.get('http://localhost:8080/wheelchair/adult')
+        .then(response => {
+          this.adultCount = response.data; // 성인용 개수 설정
+        })
+        .catch(error => {
+          console.error('성인용 휠체어 개수 가져오기 실패:', error);
+        });
+
+      // 유아용 휠체어 개수 가져오기
+      axios.get('http://localhost:8080/wheelchair/child')
+        .then(response => {
+          this.childCount = response.data; // 유아용 개수 설정
+        })
+        .catch(error => {
+          console.error('유아용 휠체어 개수 가져오기 실패:', error);
+        });
+    },
     selectCard(type) {
       // 휠체어 타입 선택
       this.selectedType = type;
@@ -80,8 +104,28 @@ export default {
       this.$router.push({ path: '/rent', query: { type: this.selectedType } });
     },
     checkRent() {
-      // 대여 확인 페이지로 이동
-      this.$router.push('/rent/check');
+      // 대여 확인 API 호출
+      axios.get('http://localhost:8080/rental/checkRent', {
+        headers: {
+          'Authorization': `Bearer ${this.getToken()}` // JWT 토큰 추가
+        }
+      })
+      .then(response => {
+        if (response.data) {
+          // 현재 대여 중일 경우 대여 현황 페이지로 이동
+          this.$router.push('/rent/check');
+        } else {
+          // 대여 중이 아닐 경우 알림 표시
+          alert('현재 대여 중이지 않습니다.');
+        }
+      })
+      .catch(error => {
+        console.error('대여 확인 실패:', error);
+      });
+    },
+    getToken() {
+      // 토큰을 가져오는 로직 (예: 로컬 스토리지에서 가져오기)
+      return localStorage.getItem('token');
     },
     goToHome() {
       // 홈 페이지로 이동

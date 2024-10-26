@@ -7,21 +7,25 @@
     </div>
 
     <!-- 프로필 카드 -->
-    <div class="card profile-card shadow-sm p-4 text-center mb-5">
-      <img :src="userInfo.profileImage" alt="Profile Image" class="profile-img mb-3" />
-      <h5 class="mb-1">{{ userInfo.name }}</h5>
-      <small class="text-muted">{{ userInfo.location }}</small>
-      <button class="btn btn-outline-dark btn-sm mt-3" @click="editProfile">정보 수정</button>
+    <div v-if="user" class="card profile-card shadow-sm p-4 text-center mb-5">
+      <h5 class="mb-1">{{ user.username }}</h5>
+      <small class="text-muted">{{ user.phoneNumber }}</small>
+    </div>
+    <div v-else>
+      <p>사용자 정보를 불러오는 중입니다...</p>
     </div>
 
     <!-- 대여 이력 섹션 -->
     <div class="card rental-history-card shadow-sm p-3">
       <h6 class="mb-3">대여 이력</h6>
       <ul class="list-group">
-        <li class="list-group-item" v-for="(rental, index) in rentalHistory" :key="index">
-          {{ rental.date }} 휠체어 대여 ({{ rental.type }})
+        <li class="list-group-item" v-for="(rental, index) in rentals" :key="index">
+          {{ rental.rentalDate }} ~ {{ rental.returnDate }} ({{ rental.status }})
         </li>
       </ul>
+      <div v-if="rentals.length === 0">
+        <p>대여 기록이 없습니다.</p>
+      </div>
     </div>
 
     <!-- 로그아웃 버튼 -->
@@ -33,25 +37,38 @@
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
+  name: 'profilePage',
   data() {
     return {
-      userInfo: {
-        name: '',
-        location: '',
-        profileImage: '', // 프로필 이미지 경로
-      },
-      rentalHistory: [
-        { date: '2023-08-17', type: '성인용' },
-        { date: '2023-07-20', type: '유아용' },
-      ],
+      user: null, // 사용자 정보
+      rentals: [], // 대여 기록
       logoutMessage: '로그아웃되었습니다!',
-      showLogoutMessage: false, // 메시지 표시 여부
+      showLogoutMessage: false,
     };
   },
+  created() {
+    this.fetchCurrentUser();
+  },
   methods: {
+    async fetchCurrentUser() {
+      try {
+        const token = localStorage.getItem('token'); // 로컬 스토리지에서 JWT 토큰 가져오기
+        const response = await axios.get('http://localhost:8080/user/current', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        this.user = response.data; // 사용자 정보 저장
+        this.rentals = response.data.rentals; // 대여 기록 저장
+      } catch (error) {
+        console.error('사용자 정보를 가져오는 데 실패했습니다:', error);
+      }
+    },
     goBack() {
-      this.$router.push('/normal'); // 뒤로가기, 메인 페이지로 이동
+      this.$router.push('/normal'); // 메인 페이지로 이동
     },
     editProfile() {
       alert('프로필 수정 기능은 아직 준비 중입니다!');
@@ -65,18 +82,6 @@ export default {
         this.showLogoutMessage = false;  // 메시지 숨김
         this.$router.push('/login');     // 로그인 페이지로 이동
       }, 2000);
-    }
-  },
-  mounted() {
-    // localStorage에서 유저 정보 불러오기
-    const userData = localStorage.getItem('userInfo');
-    if (userData) {
-      this.userInfo = JSON.parse(userData);
-
-      // 프로필 이미지가 없을 경우 기본 이미지 설정
-      if (!this.userInfo.profileImage) {
-        this.userInfo.profileImage = require('@/assets/profile.jpg'); // 기본 프로필 이미지
-      }
     }
   }
 };
@@ -108,14 +113,6 @@ export default {
 .profile-card {
   background-color: #f8f9fa;
   border-radius: 15px;
-}
-
-.profile-img {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #ddd;
 }
 
 .rental-history-card {
