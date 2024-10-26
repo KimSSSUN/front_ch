@@ -102,7 +102,7 @@ export default {
   methods: {
     async fetchWheelchairCounts() {
       try {
-        const response = await axios.get('http://localhost:8080/api/wheelchairs/count');
+        const response = await axios.get('http://localhost:8080/wheelchair/count');
         this.total = response.data.total;
         this.available = response.data.available;
         this.broken = response.data.broken;
@@ -113,7 +113,7 @@ export default {
       }
     },
     async fetchWheelchairs(status) {
-      let url = `http://localhost:8080/api/wheelchairs?status=${status}`;
+      let url = `http://localhost:8080/wheelchair?status=${status}`;
       this.selectedStatus = status; // 선택된 상태 변경
       try {
         const response = await axios.get(url);
