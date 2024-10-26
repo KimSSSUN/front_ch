@@ -46,6 +46,8 @@
 </template>
 
 <script>
+import axios from 'axios';  // Axios 추가
+
 export default {
   data() {
     return {
@@ -54,76 +56,59 @@ export default {
     };
   },
   methods: {
-    login() {
-      const storedUserInfo = localStorage.getItem('userInfo');
-      if (!storedUserInfo) {
-        alert('등록된 유저 정보가 없습니다. 회원가입을 해주세요.');
-        return;
-      }
-
-      const userInfo = JSON.parse(storedUserInfo);
-
-      // 이메일과 비밀번호를 비교하여 로그인 처리
-      if (this.email === userInfo.email && this.password === userInfo.password) {
-        if (userInfo.mode === 'user') {
-          this.$router.push('/normal');
-        } else if (userInfo.mode === 'admin') {
-          this.$router.push('/admin/rental');
-        } else if (userInfo.mode === 'guardian') {
-          this.$router.push('/guardian/profile');
-        }
-      } else {
-        alert('이메일 또는 비밀번호가 일치하지 않습니다.');
-      }
-    }
+  login() {
+    axios.post('http://localhost:8080/user/login', {  // 8080에 요청 보내기
+      username: this.email,  // 이메일을 username 필드로 전달
+      password: this.password
+    })
+    .then(response => {
+      localStorage.setItem('token', response.data.token);
+      this.$router.push('/profile');  // 로그인 성공 후 프로필 페이지로 이동
+    })
+    .catch(error => {
+      console.error('Login failed:', error.response ? error.response.data : error.message);
+      alert('로그인에 실패했습니다.');
+    });
   }
+}
+
+
+
 };
 </script>
 
-
 <style scoped>
-/* 로그인 페이지 전체 */
+/* 스타일 그대로 유지 */
 .login-page {
   height: 100vh;
   background-color: white;
 }
-
-/* 로그인 박스 */
 .login-box {
   width: 360px;
   padding: 20px;
   background-color: white;
 }
-
-/* 버튼들 스타일 */
 .btn-lg {
   font-size: 1rem;
   height: 50px;
   border-radius: 30px;
 }
-
 .btn-light {
   background-color: #f5f5f5;
   border-color: transparent;
 }
-
 .btn-dark {
   background-color: black;
   border-color: black;
 }
-
-/* Google, Facebook 버튼의 크기 조정 */
 .w-45 {
   width: 45%;
 }
-
-/* 텍스트 스타일 조정 */
 .form-label {
   font-size: 0.9rem;
   color: black;
   font-weight: bold;
 }
-
 input.form-control {
   border-radius: 10px;
   height: 50px;
@@ -131,12 +116,10 @@ input.form-control {
   padding: 10px 20px;
   border: 1px solid #ddd;
 }
-
 a {
   font-size: 0.9rem;
   text-decoration: none;
 }
-
 .text-muted {
   font-size: 0.85rem;
 }

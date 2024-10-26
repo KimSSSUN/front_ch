@@ -33,6 +33,8 @@
 </template>
 
 <script>
+import axios from 'axios'; // Axios 추가
+
 export default {
   data() {
     return {
@@ -41,10 +43,7 @@ export default {
         location: '',
         profileImage: '', // 프로필 이미지 경로
       },
-      rentalHistory: [
-        { date: '2023-08-17', type: '성인용' },
-        { date: '2023-07-20', type: '유아용' },
-      ],
+      rentalHistory: [],
       logoutMessage: '로그아웃되었습니다!',
       showLogoutMessage: false, // 메시지 표시 여부
     };
@@ -57,38 +56,54 @@ export default {
       alert('프로필 수정 기능은 아직 준비 중입니다!');
     },
     logout() {
-      // 로그아웃 메시지를 표시하도록 설정
       this.showLogoutMessage = true;
 
       // 2초 후 로그인 페이지로 이동
       setTimeout(() => {
-        this.showLogoutMessage = false;  // 메시지 숨김
-        this.$router.push('/login');     // 로그인 페이지로 이동
+        this.showLogoutMessage = false;
+        this.$router.push('/login');
       }, 2000);
+    },
+    // 백엔드에서 사용자 정보 가져오기
+    fetchUserInfo() {
+      const token = localStorage.getItem('token'); // JWT 토큰 가져오기
+      if (!token) {
+        alert('로그인 후 접근해주세요.');
+        this.$router.push('/login'); // 로그인 페이지로 이동
+        return;
+      }
+
+      axios
+        .get('http://localhost:8081/user/current', {
+          headers: {
+            Authorization: `Bearer ${token}` // JWT 토큰을 헤더에 포함
+          }
+        })
+        .then((response) => {
+          this.userInfo = response.data; // 서버로부터 받은 사용자 정보 저장
+          if (response.data.rentalHistory) {
+            this.rentalHistory = response.data.rentalHistory; // 대여 이력 저장
+          }
+        })
+        .catch((error) => {
+          console.error('사용자 정보를 가져오는 중 오류 발생', error);
+          alert('사용자 정보를 가져오지 못했습니다.');
+        });
     }
   },
   mounted() {
-    // localStorage에서 유저 정보 불러오기
-    const userData = localStorage.getItem('userInfo');
-    if (userData) {
-      this.userInfo = JSON.parse(userData);
-
-      // 프로필 이미지가 없을 경우 기본 이미지 설정
-      if (!this.userInfo.profileImage) {
-        this.userInfo.profileImage = require('@/assets/profile.jpg'); // 기본 프로필 이미지
-      }
-    }
+    this.fetchUserInfo(); // 컴포넌트가 마운트될 때 사용자 정보를 가져옴
   }
 };
 </script>
 
 <style scoped>
+/* 스타일 그대로 유지 */
 .profile-page {
   max-width: 400px;
   margin: 0 auto;
   padding: 20px;
 }
-
 .back-container {
   display: flex;
   align-items: center;
@@ -96,20 +111,16 @@ export default {
   color: #007bff;
   font-size: 1rem;
 }
-
 .back-button {
   font-size: 1.5rem;
 }
-
 .back-text {
   margin-left: 10px;
 }
-
 .profile-card {
   background-color: #f8f9fa;
   border-radius: 15px;
 }
-
 .profile-img {
   width: 100px;
   height: 100px;
@@ -117,15 +128,12 @@ export default {
   object-fit: cover;
   border: 2px solid #ddd;
 }
-
 .rental-history-card {
   border-radius: 15px;
 }
-
 .list-group-item {
   font-size: 0.95rem;
 }
-
 .text-success {
   color: green;
   font-weight: bold;
