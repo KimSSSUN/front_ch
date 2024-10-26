@@ -47,23 +47,25 @@
     >
       미리 반납하기
     </button>
-    <BottomNav />
+
+    <!-- 공통 NavBar 컴포넌트 사용 -->
+    <NavBar :currentTab="'rent'" />
   </div>
 </template>
 
 <script>
 import axios from 'axios';
-import BottomNav from '@/components/BottomNav.vue'; // BottomNav 컴포넌트 가져오기
+import NavBar from '@/components/NavBar.vue';
 
 export default {
   components: {
-      BottomNav // BottomNav 컴포넌트 등록
-    },
+    NavBar
+  },
   data() {
     return {
-      user: null, // 현재 사용자 정보
+      user: null,
       currentRental: {
-        wheelchair: {}, // 초기값으로 빈 객체 할당
+        wheelchair: {}
       },
     };
   },
@@ -82,7 +84,6 @@ export default {
     this.fetchCurrentUser();
   },
   methods: {
-    // 사용자 대여 정보 가져오기
     async fetchCurrentUser() {
       try {
         const token = localStorage.getItem('token');
@@ -92,13 +93,11 @@ export default {
           },
         });
         this.user = response.data;
-        this.currentRental = this.user || {}; // 사용자 정보가 없으면 빈 객체로 초기화
+        this.currentRental = this.user || {};
       } catch (error) {
         console.error('사용자 정보를 가져오는 데 실패했습니다:', error);
       }
     },
-    
-    // 미리 반납하기 기능
     async returnRental() {
       if (confirm('정말 반납하시겠습니까?')) {
         try {
@@ -110,8 +109,8 @@ export default {
           });
           if (response.status === 200) {
             alert('반납이 완료되었습니다.');
-            this.currentRental.status = 'RETURNED'; // 상태를 'RETURNED'로 변경
-            this.fetchCurrentUser(); // 반납 후 사용자 정보 갱신
+            this.currentRental.status = 'RETURNED';
+            this.fetchCurrentUser();
             this.$router.push('/normal');
           } else {
             alert('반납 처리 중 오류가 발생했습니다.');
@@ -122,8 +121,6 @@ export default {
         }
       }
     },
-
-    // 대여 취소하기 기능
     async cancelReservation() {
       if (confirm('정말 대여를 취소하시겠습니까?')) {
         try {
@@ -135,8 +132,8 @@ export default {
           });
           if (response.status === 200) {
             alert('대여가 취소되었습니다.');
-            this.currentRental.status = 'Cancelled'; // 상태를 'Cancelled'로 변경
-            this.fetchCurrentUser(); // 취소 후 사용자 정보 갱신
+            this.currentRental.status = 'Cancelled';
+            this.fetchCurrentUser();
             this.$router.push('/normal');
           } else {
             alert('대여 취소 중 오류가 발생했습니다.');
@@ -146,19 +143,8 @@ export default {
           alert('대여 취소 중 오류가 발생했습니다.');
         }
       }
-    },
-
-    // 네비게이션 기능들
-    goToHome() {
-      this.$router.push('/normal');
-    },
-    goToRent() {
-      this.$router.push('/rent');
-    },
-    goToCommunity() {
-      this.$router.push('/community');
-    },
-  },
+    }
+  }
 };
 </script>
 
@@ -186,39 +172,5 @@ export default {
   height: 10px;
   background-color: #007bff;
   border-radius: 5px;
-}
-
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background-color: white;
-  border-top: 1px solid #ddd;
-  padding: 10px 0;
-  z-index: 1000;
-}
-
-.nav-item {
-  text-align: center;
-  background-color: white;
-  border: none;
-  box-shadow: none;
-}
-
-.nav-item i {
-  font-size: 1.6rem;
-  display: block;
-}
-
-.nav-text {
-  font-size: 0.75rem;
-  margin-top: 4px;
-  color: #666;
-}
-
-.nav-text.active {
-  font-weight: bold;
-  color: #007bff;
 }
 </style>

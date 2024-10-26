@@ -1,115 +1,112 @@
 <template>
-  <div class="profile-page container">
-    <!-- 뒤로가기 버튼 -->
-    <div class="d-flex align-items-center mb-4 back-container">
-      <i class="bi bi-arrow-left back-button" @click="goBack"></i>
-      <span class="ml-2 back-text">뒤로</span>
+  <div class="profile-container text-center">
+    <h5>Guardian Profile</h5>
+    <div class="profile-card">
+      <img :src="profileImage" alt="Profile" class="profile-img" />
+      <h6>{{ guardianName }}</h6>
+      <p>{{ guardianLocation }}</p>
     </div>
 
-    <!-- 보호자 프로필 제목 -->
-    <h4 class="text-center mb-4">보호자 프로필</h4>
-
-    <!-- 프로필 카드 -->
-    <div v-if="user" class="card profile-card shadow-sm p-4 text-center mb-5">
-      <h5 class="mb-1">{{ user.username }}</h5>
-      <small class="text-muted">{{ user.phoneNumber }}</small>
-
-      <!-- 자식 사용자 정보 추가 -->
-      <hr />
-      <h6 class="mt-3">자식 사용자 정보</h6>
-      <p><strong>이름:</strong> {{ user.childUsername }}</p>
-      <p><strong>전화번호:</strong> {{ user.childPhoneNumber }}</p>
-      <p><strong>대여 날짜:</strong> {{ user.rentalDate }}</p>
-      <p><strong>반납 날짜:</strong> {{ user.returnDate }}</p>
-    </div>
-    <div v-else>
-      <p>사용자 정보를 불러오는 중입니다...</p>
+    <div class="info-card">
+      <h6>Phone: {{ guardianPhone }}</h6>
+      <h6>Email: {{ guardianEmail }}</h6>
     </div>
 
     <!-- 로그아웃 버튼 -->
-    <button class="btn btn-danger w-100 mt-4" @click="logout">로그아웃</button>
+    <button class="btn btn-danger btn-lg w-100 mt-4" @click="logout">로그아웃</button>
 
     <!-- 로그아웃 메시지 -->
     <p v-if="showLogoutMessage" class="text-success mt-3">{{ logoutMessage }}</p>
+
+    <!-- 공통 네비게이션 컴포넌트 추가 -->
+    <GurdianNav :currentTab="currentTab" @update-tab="updateTab" />
   </div>
 </template>
 
 <script>
 import axios from 'axios';
+import GurdianNav from "@/components/GurdianNav.vue"; // 공통 컴포넌트 임포트
 
 export default {
-  name: 'guardianProfilePage',
+  components: { GurdianNav },  // 공통 컴포넌트 등록
   data() {
     return {
-      user: null, // 사용자 정보
-      logoutMessage: '로그아웃되었습니다!',
-      showLogoutMessage: false,
+      currentTab: 'profile', // 현재 활성화된 탭
+      profileImage: require("@/assets/profile.jpg"), // 기본 프로필 이미지 경로
+      guardianName: "가디언 이름",
+      guardianLocation: "위치 정보 없음",
+      guardianPhone: "전화번호 없음",
+      guardianEmail: "이메일 없음",
+      showLogoutMessage: false, // 로그아웃 메시지 표시 여부
+      logoutMessage: '로그아웃되었습니다!' // 로그아웃 메시지
     };
   },
-  created() {
-    this.fetchCurrentUser();
-  },
   methods: {
-    async fetchCurrentUser() {
-      try {
-        const token = localStorage.getItem('token'); // 로컬 스토리지에서 JWT 토큰 가져오기
-        const response = await axios.get('http://localhost:8080/user/guardian/current', { // API 경로 수정
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        this.user = response.data; // 사용자 정보 저장
-      } catch (error) {
-        console.error('사용자 정보를 가져오는 데 실패했습니다:', error);
-      }
-    },
-    goBack() {
-      this.$router.push('/guardian/map'); // 보호자 모드 메인 페이지로 이동
+    goToMap() {
+      this.$router.push("/guardian/map");
+      this.currentTab = "map";  // 현재 탭 업데이트
     },
     logout() {
-      // 로그아웃 메시지를 표시하도록 설정
+      localStorage.removeItem('token');
       this.showLogoutMessage = true;
-
-      // 2초 후 로그인 페이지로 이동
       setTimeout(() => {
-        this.showLogoutMessage = false; // 메시지 숨김
-        this.$router.push('/login'); // 로그인 페이지로 이동
+        this.$router.push('/login');
       }, 2000);
+    },
+    fetchGuardianInfo() {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('로그인 후 접근해주세요.');
+        this.$router.push('/login');
+        return;
+      }
+      axios.get('http://localhost:8080/user/current', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      .then((response) => {
+        const guardianInfo = response.data;
+        this.guardianName = guardianInfo.name || '가디언 이름 없음';
+        this.guardianLocation = guardianInfo.location || '위치 정보 없음';
+        this.guardianPhone = guardianInfo.phone || '전화번호 없음';
+        this.guardianEmail = guardianInfo.email || '이메일 없음';
+        this.profileImage = guardianInfo.profileImage || require('@/assets/profile.jpg');
+      })
+      .catch((error) => {
+        console.error('가디언 정보를 가져오는 중 오류 발생', error);
+        alert('가디언 정보를 가져오지 못했습니다.');
+      });
+    },
+    updateTab(tab) {
+      this.currentTab = tab;  // 탭 업데이트
     }
-  }
+  },
+  mounted() {
+    this.fetchGuardianInfo();
+  },
 };
 </script>
 
 <style scoped>
-.profile-page {
-  max-width: 400px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.back-container {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  color: #007bff;
-  font-size: 1rem;
-}
-
-.back-button {
-  font-size: 1.5rem;
-}
-
-.back-text {
-  margin-left: 10px;
+.profile-container {
+  margin-top: 20px;
 }
 
 .profile-card {
-  background-color: #f8f9fa;
-  border-radius: 15px;
+  margin-bottom: 20px;
 }
 
-.text-success {
-  color: green;
-  font-weight: bold;
+.profile-img {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  margin-bottom: 10px;
+}
+
+.info-card {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
 }
 </style>

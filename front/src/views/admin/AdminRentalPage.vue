@@ -19,28 +19,19 @@
     </ul>
     <p v-else>대기 중인 대여 요청이 없습니다.</p>
 
-    <!-- 하단 네비게이션 -->
-    <nav class="bottom-nav d-flex justify-content-around align-items-center">
-      <button class="nav-item" @click="goToHome">
-        <i class="bi bi-house-door"></i>
-        <span class="nav-text" :class="{ 'active': currentTab === 'home' }">Home</span>
-      </button>
-      <button class="nav-item" @click="goToWheelchair">
-        <i class="bi bi-person-fill"></i>
-        <span class="nav-text" :class="{ 'active': currentTab === 'wheelchair' }">Wheelchair</span>
-      </button>
-      <button class="nav-item" @click="goToRentals">
-        <i class="bi bi-list"></i>
-        <span class="nav-text" :class="{ 'active': currentTab === 'rentals' }">Rentals</span>
-      </button>
-    </nav>
+    <!-- Bottom Navigation Component -->
+    <AdminNav currentTab="rentals" />
   </div>
 </template>
 
 <script>
 import axios from 'axios';
+import AdminNav from '@/components/AdminNav.vue';
 
 export default {
+  components: {
+    AdminNav,
+  },
   data() {
     return {
       currentTab: 'rentals', // Rentals 탭을 기본 활성화
@@ -53,7 +44,6 @@ export default {
   methods: {
     async fetchWaitingRentals() {
       try {
-        // rentalStatus가 WAITING인 대여 목록을 API를 통해 가져옴
         const response = await axios.get('http://localhost:8080/rental/list');
         this.waitingRentals = response.data;
       } catch (error) {
@@ -64,72 +54,27 @@ export default {
       return new Date(date).toLocaleDateString();
     },
     approveRental(rentalId) {
-      // 수락 버튼을 눌렀을 때 대여를 승인하는 로직 추가
       axios.put(`http://localhost:8080/api/rentals/${rentalId}/approve`)
           .then(() => {
-            this.fetchWaitingRentals(); // 리스트 새로고침
+            this.fetchWaitingRentals();
           })
           .catch((error) => {
             console.error('Failed to approve rental:', error);
           });
     },
     rejectRental(rentalId) {
-      // 취소 버튼을 눌렀을 때 대여를 취소하는 로직 추가
       axios.put(`http://localhost:8080/api/rentals/${rentalId}/reject`)
           .then(() => {
-            this.fetchWaitingRentals(); // 리스트 새로고침
+            this.fetchWaitingRentals();
           })
           .catch((error) => {
             console.error('Failed to reject rental:', error);
           });
-    },
-    goToHome() {
-      this.$router.push('/normal');
-      this.currentTab = 'home';
-    },
-    goToWheelchair() {
-      this.$router.push('/admin/wheelchair');
-      this.currentTab = 'wheelchair';
-    },
-    goToRentals() {
-      this.$router.push('/admin/rental');
-      this.currentTab = 'rentals';
     }
   }
 };
 </script>
 
 <style scoped>
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background-color: white;
-  border-top: 1px solid #ddd;
-  padding: 10px 0;
-}
-
-.nav-item {
-  text-align: center;
-  background-color: white;
-  border: none;
-  box-shadow: none;
-}
-
-.nav-item i {
-  font-size: 1.6rem;
-  display: block;
-}
-
-.nav-text {
-  font-size: 0.75rem;
-  margin-top: 4px;
-  color: #666;
-}
-
-.nav-text.active {
-  font-weight: bold;
-  color: #007bff;
-}
+/* 기존 스타일 그대로 유지 */
 </style>

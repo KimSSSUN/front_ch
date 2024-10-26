@@ -37,29 +37,14 @@
 </template>
 
 <script>
-<<<<<<< HEAD
 import axios from 'axios';
 
-=======
->>>>>>> s
 export default {
   name: 'profilePage',
   data() {
     return {
-<<<<<<< HEAD
       user: null, // 사용자 정보
       rentals: [], // 대여 기록
-=======
-      userInfo: {
-        name: '',
-        location: '',
-        profileImage: '', // 프로필 이미지 경로
-      },
-      rentalHistory: [
-        { date: '2023-08-17', type: '성인용' },
-        { date: '2023-07-20', type: '유아용' },
-      ],
->>>>>>> s
       logoutMessage: '로그아웃되었습니다!',
       showLogoutMessage: false,
     };
@@ -98,21 +83,6 @@ export default {
         this.$router.push('/login');     // 로그인 페이지로 이동
       }, 2000);
     }
-<<<<<<< HEAD
-=======
-  },
-  mounted() {
-    // localStorage에서 유저 정보 불러오기
-    const userData = localStorage.getItem('userInfo');
-    if (userData) {
-      this.userInfo = JSON.parse(userData);
-
-      // 프로필 이미지가 없을 경우 기본 이미지 설정
-      if (!this.userInfo.profileImage) {
-        this.userInfo.profileImage = require('@/assets/profile.jpg'); // 기본 프로필 이미지
-      }
-    }
->>>>>>> s
   }
 };
 </script>
@@ -145,17 +115,6 @@ export default {
   border-radius: 15px;
 }
 
-<<<<<<< HEAD
-=======
-.profile-img {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #ddd;
-}
-
->>>>>>> s
 .rental-history-card {
   border-radius: 15px;
 }
